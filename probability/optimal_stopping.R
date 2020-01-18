@@ -22,14 +22,14 @@ interview_stream <- function(max_score = 100, num_applicants = 20) {
 #' PARAMETERS
 max_score      <- 100
 num_applicants <- 20
-iters          <- 10000
+iters          <- 1000
 
 #' TEST
 is_best <- function(scores, selection_idx) {
     return(selection_idx == which.max(scores))
 }
     
-#' STRATEGIES
+#' STRATEGIES ----------------------
 #' 
 #' Select the first greater than X% of of the maximum, or the last
 first_gt_X <- function(scores, target = 85) {
@@ -38,16 +38,27 @@ first_gt_X <- function(scores, target = 85) {
     return(idx)
 }
 
+#' Discard first N/e, then pick first higher one
+wait_n_ovr_e_until_marriage <- function(scores) {
+    mx <- 0
+    stop_idx <- round(num_applicants / exp(1))
+    for (idx in 1:stop_idx) {
+        next_score <- scores[idx]
+        if (next_score > mx) {
+            mx <- next_score
+        }
+    }
+    selected_idx <- -1
+    for (idx in (stop_idx+1):length(scores)) {
+        score <- scores[idx]
+        if (score > mx) {
+            return(idx)
+        }
+    }
+    return(length(scores))
+}
 
-# attempts = c()
-# for (i in 1:iters) {
-#     scores <- interview_stream(max_score, num_applicants)
-#     attempt <- is_best(scores, first_gt_85(scores))
-#     attempts <- c(attempts, attempt)
-# }
-# num_success <- sum(attempts)
-# num_total <- iters
-# print(paste("Success rate:", num_success, "/", num_total, "=", num_success/num_total))
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
 
 #' Get the proportion of successes with the given strategy
 #' Additional parameters to the input strategy function may be passed in ...
@@ -62,12 +73,13 @@ percent_best <- function(strat = first_gt_X, ...) {
 }
 
 # Plot success rate against target
-targets <- 50:99
+targets <- 40:99
 perc_bests <- c()
 for (target in targets) {
     scores <- interview_stream(max_score, num_applicants)
-    perc_bests <- c(perc_bests, first_gt_X(scores, target))
+    perc_bests <- c(perc_bests, percent_best(first_gt_X, target))
 }
-plot(targets, perc_bests, main="Title", lty="l")
+plot(targets, perc_bests, main="Title", type="l", col='grey')
+abline(v = targets[which.max(perc_bests)], col='red')
 
 
